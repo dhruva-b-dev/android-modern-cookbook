@@ -14,7 +14,7 @@ class BuilderDesignPattern {
         val hasSunroof: Boolean
     ) {
         fun print() {
-            print("car : $brand $model $year $hasSunroof")
+            println("car : $brand $model $year $hasSunroof")
         }
 
         //nested builder class
