@@ -7,6 +7,7 @@ import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.ui.NavDisplay
 import com.dhruva.designpatterns.ui.screens.CreationalPatternsScreen
 import com.dhruva.designpatterns.ui.screens.DesignPatternsScreen
+import com.dhruva.designpatterns.ui.screens.StructuralPatternsScreen
 import kotlinx.serialization.serializer
 
 @Composable
@@ -30,13 +31,19 @@ fun AppNavigator() {
                         navigateToCreationalScreen = {
                             backStack.add(CreationalScreen)
                         },
-                        navigateToStructuralScreen = {},
+                        navigateToStructuralScreen = {
+                            backStack.add(StructuralScreen)
+                        },
                         navigateToBehaviouralScreen = {}
                     )
                 }
 
                 is CreationalScreen -> NavEntry(key) {
                     CreationalPatternsScreen()
+                }
+
+                is StructuralScreen -> NavEntry(key) {
+                    StructuralPatternsScreen()
                 }
             }
         }

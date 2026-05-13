@@ -12,4 +12,5 @@ data object DesignPatternsScreen : AppNavigationKeys
 @Serializable
 data object CreationalScreen : AppNavigationKeys
 
+data object StructuralScreen : AppNavigationKeys
 //Add remaining files as you add them
