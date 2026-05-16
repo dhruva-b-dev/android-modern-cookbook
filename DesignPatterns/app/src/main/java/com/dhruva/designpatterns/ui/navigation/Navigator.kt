@@ -5,6 +5,7 @@ import androidx.compose.runtime.saveable.rememberSerializable
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.ui.NavDisplay
+import com.dhruva.designpatterns.ui.screens.BehavioralPatternScreen
 import com.dhruva.designpatterns.ui.screens.CreationalPatternsScreen
 import com.dhruva.designpatterns.ui.screens.DesignPatternsScreen
 import com.dhruva.designpatterns.ui.screens.StructuralPatternsScreen
@@ -34,7 +35,9 @@ fun AppNavigator() {
                         navigateToStructuralScreen = {
                             backStack.add(StructuralScreen)
                         },
-                        navigateToBehaviouralScreen = {}
+                        navigateToBehaviouralScreen = {
+                            backStack.add(BehavioralScreen)
+                        }
                     )
                 }
 
@@ -44,6 +47,10 @@ fun AppNavigator() {
 
                 is StructuralScreen -> NavEntry(key) {
                     StructuralPatternsScreen()
+                }
+
+                is BehavioralScreen -> NavEntry(key) {
+                    BehavioralPatternScreen()
                 }
             }
         }
