@@ -10,8 +10,19 @@ Design Patterns included :
 	v) Singleton
 
 2. Structural 
+	i) Adapter 
+	ii) Decorator 
+	iii) Composite 
+	iv) Protection Proxy 
 
 3. Behavioral  
+	i) Chain of Responsibility
+	ii) Command 
+	iii) Memento 
+	iv) State 
+	v) Visitor 
+	vi) Observer 
+	vii) Strategy 
 
 References : 
 
