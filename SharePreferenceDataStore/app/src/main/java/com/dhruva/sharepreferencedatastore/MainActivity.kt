@@ -7,11 +7,17 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -66,8 +72,15 @@ fun Greeting(modifier: Modifier = Modifier) {
     var sharedPrefText by remember { mutableStateOf("") }
     var dataStoreText by remember { mutableStateOf("") }
 
+    var showDialog by remember { mutableStateOf(false) }
+    var isDataStoreDialog by remember { mutableStateOf(false) }
+
+    if (showDialog) {
+        ShowDialog(isDataStore = isDataStoreDialog, onDismiss = { showDialog = false })
+    }
+
     Column(
-        modifier = modifier.fillMaxSize(),//.padding(32.dp),
+        modifier = modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
@@ -88,7 +101,17 @@ fun Greeting(modifier: Modifier = Modifier) {
             },
             modifier = Modifier.padding(8.dp)
         ) {
-            Text("Shared Preference")
+            Text("Get Shared Preference")
+        }
+
+        Button(
+            onClick = {
+                isDataStoreDialog = false
+                showDialog = true
+            },
+            modifier = Modifier.padding(8.dp)
+        ) {
+            Text("Update Shared Preference")
         }
 
         Button(
@@ -100,7 +123,17 @@ fun Greeting(modifier: Modifier = Modifier) {
             },
             modifier = Modifier.padding(8.dp)
         ) {
-            Text("Data Store")
+            Text("Get Data Store")
+        }
+
+        Button(
+            onClick = {
+                isDataStoreDialog = true
+                showDialog = true
+            },
+            modifier = Modifier.padding(8.dp)
+        ) {
+            Text("Update Data Store")
         }
     }
 }
@@ -119,21 +152,63 @@ private suspend fun getFromDataStore(context: Context): Pair<String, Int> {
     return Pair(textVal, intVal)
 }
 
-fun putInSharedPreference(context: Context) {
+fun putInSharedPreference(context: Context, value: String = "shared preference") {
     val sharedPref = context.getSharedPreferences("shared_pref", MODE_PRIVATE)
     sharedPref.edit {
-        this.putString("sp_key", "shared preference")
+        this.putString("sp_key", value)
         this.putInt("sp_int_key", 1)
     }
 }
 
-private suspend fun putInDataStore(context: Context) {
+private suspend fun putInDataStore(context: Context, value: String = "data store") {
     context.dataStore.edit {
-        it[stringPreferencesKey("ds_key")] = "data store"
+        it[stringPreferencesKey("ds_key")] = value
         it[intPreferencesKey("ds_int_key")] = 1
     }
 }
 
+@Composable
+fun ShowDialog(isDataStore: Boolean, onDismiss: () -> Unit) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var text by remember { mutableStateOf("") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(text = if (isDataStore) "Update Data Store" else "Update Shared Preference")
+        },
+        text = {
+            TextField(
+                value = text,
+                onValueChange = { text = it },
+                label = { Text("Enter value") }
+            )
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    if (isDataStore) {
+                        scope.launch {
+                            putInDataStore(context, text)
+                            onDismiss()
+                        }
+                    } else {
+                        putInSharedPreference(context, text)
+                        onDismiss()
+                    }
+                }
+            ) {
+                Text("Update")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
+}
 
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
