@@ -7,13 +7,10 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -43,6 +40,9 @@ import kotlinx.coroutines.launch
 
 val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "my_ds")
 
+val Context.secureDataStore: DataStore<String>
+    get() = SecureDataStoreSingleton.getInstance(this)
+
 class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -56,7 +56,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             SharePreferenceDataStoreTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
+                    HomeScreen(
                         modifier = Modifier.padding(innerPadding)
                     )
                 }
@@ -66,17 +66,18 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun Greeting(modifier: Modifier = Modifier) {
+fun HomeScreen(modifier: Modifier = Modifier) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var sharedPrefText by remember { mutableStateOf("") }
     var dataStoreText by remember { mutableStateOf("") }
+    var encryptedDataStoreText by remember { mutableStateOf("") }
 
     var showDialog by remember { mutableStateOf(false) }
-    var isDataStoreDialog by remember { mutableStateOf(false) }
+    var dialogType by remember { mutableStateOf(DialogType.SHARED_PREFERENCE) }
 
     if (showDialog) {
-        ShowDialog(isDataStore = isDataStoreDialog, onDismiss = { showDialog = false })
+        ShowDialog(dialogType = dialogType, onDismiss = { showDialog = false })
     }
 
     Column(
@@ -94,6 +95,11 @@ fun Greeting(modifier: Modifier = Modifier) {
             modifier = Modifier.padding(8.dp)
         )
 
+        Text(
+            text = encryptedDataStoreText,
+            modifier = Modifier.padding(8.dp)
+        )
+
         Button(
             onClick = {
                 val (prefText, prefInt) = getFromSharedPreference(context)
@@ -106,7 +112,7 @@ fun Greeting(modifier: Modifier = Modifier) {
 
         Button(
             onClick = {
-                isDataStoreDialog = false
+                dialogType = DialogType.SHARED_PREFERENCE
                 showDialog = true
             },
             modifier = Modifier.padding(8.dp)
@@ -128,15 +134,38 @@ fun Greeting(modifier: Modifier = Modifier) {
 
         Button(
             onClick = {
-                isDataStoreDialog = true
+                dialogType = DialogType.DATA_STORE
                 showDialog = true
             },
             modifier = Modifier.padding(8.dp)
         ) {
             Text("Update Data Store")
         }
+
+        Button(
+            onClick = {
+                scope.launch {
+                    val (dsText, dsInt) = getFromEncryptedDataStore(context)
+                    encryptedDataStoreText = "Encrypted Data Store\nText: $dsText\nInt: $dsInt"
+                }
+            },
+            modifier = Modifier.padding(8.dp)
+        ) {
+            Text("Get Encrypted Data Store")
+        }
+
+        Button(
+            onClick = {
+                dialogType = DialogType.ENCRYPTED_DATA_STORE
+                showDialog = true
+            },
+            modifier = Modifier.padding(8.dp)
+        ) {
+            Text("Update Encrypted Data Store")
+        }
     }
 }
+
 
 private fun getFromSharedPreference(context: Context): Pair<String, Int> {
     val sharedPreferences = context.getSharedPreferences("shared_pref", MODE_PRIVATE)
@@ -167,8 +196,21 @@ private suspend fun putInDataStore(context: Context, value: String = "data store
     }
 }
 
+suspend fun putInEncryptedDataStore(context: Context, value: String = "encrypted data store") {
+    // Writing data (Suspended function)
+    context.secureDataStore.updateData { value }
+}
+
+private suspend fun getFromEncryptedDataStore(context: Context): Pair<String, Int> {
+    // Reading data (Asynchronous Flow)
+    val data = context.secureDataStore.data.first()
+    val textVal = data
+    val intVal = 1
+    return Pair(textVal, intVal)
+}
+
 @Composable
-fun ShowDialog(isDataStore: Boolean, onDismiss: () -> Unit) {
+fun ShowDialog(dialogType: DialogType, onDismiss: () -> Unit) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var text by remember { mutableStateOf("") }
@@ -176,7 +218,7 @@ fun ShowDialog(isDataStore: Boolean, onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
-            Text(text = if (isDataStore) "Update Data Store" else "Update Shared Preference")
+            Text(text = getDialogTitle(dialogType))
         },
         text = {
             TextField(
@@ -188,14 +230,25 @@ fun ShowDialog(isDataStore: Boolean, onDismiss: () -> Unit) {
         confirmButton = {
             Button(
                 onClick = {
-                    if (isDataStore) {
-                        scope.launch {
-                            putInDataStore(context, text)
+                    when (dialogType) {
+                        DialogType.DATA_STORE -> {
+                            scope.launch {
+                                putInDataStore(context, text)
+                                onDismiss()
+                            }
+                        }
+
+                        DialogType.SHARED_PREFERENCE -> {
+                            putInSharedPreference(context, text)
                             onDismiss()
                         }
-                    } else {
-                        putInSharedPreference(context, text)
-                        onDismiss()
+
+                        DialogType.ENCRYPTED_DATA_STORE -> {
+                            scope.launch {
+                                putInEncryptedDataStore(context, text)
+                                onDismiss()
+                            }
+                        }
                     }
                 }
             ) {
@@ -210,10 +263,11 @@ fun ShowDialog(isDataStore: Boolean, onDismiss: () -> Unit) {
     )
 }
 
+
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
-fun GreetingPreview() {
+fun HomeScreenPreview() {
     SharePreferenceDataStoreTheme {
-        Greeting()
+        HomeScreen()
     }
 }
